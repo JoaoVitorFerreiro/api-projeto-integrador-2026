@@ -1,0 +1,74 @@
+# ─── CLIENTES ────────────────────────────────────────────────────────────────
+
+### Criar cliente
+POST http://localhost:3000/clientes
+Content-Type: application/json
+
+{
+  "nome": "Joao Vitor",
+  "email": "joao@email.com"
+}
+
+###
+
+### Listar todos os clientes
+GET http://localhost:3000/clientes
+
+###
+
+### Buscar cliente por id
+GET http://localhost:3000/clientes/1
+
+###
+
+### Buscar cliente por nome (busca parcial)
+GET http://localhost:3000/clientes?nome=jo
+
+###
+
+# ─── PRODUTOS ────────────────────────────────────────────────────────────────
+
+### Criar produto
+POST http://localhost:3000/produtos
+Content-Type: application/json
+
+{
+  "nome": "Notebook",
+  "preco": 3500
+}
+
+###
+
+### Listar todos os produtos
+GET http://localhost:3000/produtos
+
+###
+
+### Buscar produto por id
+GET http://localhost:3000/produtos/2
+
+###
+
+### Buscar produto por nome (busca parcial)
+GET http://localhost:3000/produtos?nome=note
+
+###
+
+# ─── VENDAS ──────────────────────────────────────────────────────────────────
+
+### Criar venda (o total é calculado automaticamente pelo preço do produto)
+POST http://localhost:3000/vendas
+Content-Type: application/json
+
+{
+  "clienteId": 1,
+  "produtoId": 1,
+  "quantidade": 2
+}
+
+###
+
+### Listar todas as vendas
+GET http://localhost:3000/vendas
+
+###
