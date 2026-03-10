@@ -26,29 +26,29 @@ export class ProdutoRepository implements IProdutoRepository {
   }
 
   listar(): Produto[] {
-    const stmt = db.prepare("SELECT * FROM produtos");
-    const linhas = stmt.all() as ProdutoRow[];
+    const query = db.prepare("SELECT * FROM produtos");
+    const linhas = query.all() as ProdutoRow[];
     return linhas.map((linha) =>
       Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque)
     );
   }
 
   buscarPorId(id: number): Produto | null {
-    const stmt = db.prepare("SELECT * FROM produtos WHERE id = ?");
-    const linha = stmt.get(id) as ProdutoRow | undefined;
+    const query = db.prepare("SELECT * FROM produtos WHERE id = ?");
+    const linha = query.get(id) as ProdutoRow | undefined;
     if (!linha) return null;
     return Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque);
   }
 
   buscarPorNome(nome: string): Produto | null {
-    const stmt = db.prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    const linha = stmt.get(`%${nome}%`) as ProdutoRow | undefined;
+    const query = db.prepare("SELECT * FROM produtos WHERE nome LIKE ?");
+    const linha = query.get(`%${nome}%`) as ProdutoRow | undefined;
     if (!linha) return null;
     return Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque);
   }
 
   atualizarEstoque(produto: Produto): void {
-    const stmt = db.prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
-    stmt.run(produto.getEstoque(), produto.getId());
+    const query = db.prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
+    query.run(produto.getEstoque(), produto.getId());
   }
 }

@@ -24,23 +24,23 @@ export class ClienteRepository implements IClienteRepository {
   }
 
   listar(): Cliente[] {
-    const stmt = db.prepare("SELECT * FROM clientes");
-    const linhas = stmt.all() as ClienteRow[];
+    const query = db.prepare("SELECT * FROM clientes");
+    const linhas = query.all() as ClienteRow[];
     return linhas.map((linha) =>
       Cliente.reconstituir(linha.id, linha.nome, linha.email)
     );
   }
 
   buscarPorId(id: number): Cliente | null {
-    const stmt = db.prepare("SELECT * FROM clientes WHERE id = ?");
-    const linha = stmt.get(id) as ClienteRow | undefined;
+    const query = db.prepare("SELECT * FROM clientes WHERE id = ?");
+    const linha = query.get(id) as ClienteRow | undefined;
     if (!linha) return null;
     return Cliente.reconstituir(linha.id, linha.nome, linha.email);
   }
 
   buscarPorNome(nome: string): Cliente | null {
-    const stmt = db.prepare("SELECT * FROM clientes WHERE nome LIKE ?");
-    const linha = stmt.get(`%${nome}%`) as ClienteRow | undefined;
+    const query = db.prepare("SELECT * FROM clientes WHERE nome LIKE ?");
+    const linha = query.get(`%${nome}%`) as ClienteRow | undefined;
     if (!linha) return null;
     return Cliente.reconstituir(linha.id, linha.nome, linha.email);
   }
