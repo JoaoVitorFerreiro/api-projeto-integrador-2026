@@ -1,8 +1,8 @@
 export class Cliente {
   private constructor(
-    private readonly id: number,
-    private readonly nome: string,
-    private readonly email: string
+    private id: number,
+    private nome: string,
+    private email: string
   ) {}
 
   static create(nome: string, email: string): Cliente {

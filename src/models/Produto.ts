@@ -2,23 +2,32 @@ export class Produto {
   private constructor(
     private readonly id: number,
     private readonly nome: string,
-    private readonly preco: number
+    private readonly preco: number,
+    private readonly estoque: number
   ) {}
 
-  // Cria um novo produto com validações.
-  static create(nome: string, preco: number): Produto {
+  static create(nome: string, preco: number, estoque: number): Produto {
     if (!nome || nome.trim().length === 0) {
       throw new Error("Nome é obrigatório");
     }
     if (preco <= 0) {
       throw new Error("Preço deve ser maior que zero");
     }
-    return new Produto(0, nome.trim(), preco);
+    if (estoque < 0) {
+      throw new Error("Estoque não pode ser negativo");
+    }
+    return new Produto(0, nome.trim(), preco, estoque);
   }
 
-  // Reconstitui um produto vindo do banco de dados.
-  static reconstituir(id: number, nome: string, preco: number): Produto {
-    return new Produto(id, nome, preco);
+  static reconstituir(id: number, nome: string, preco: number, estoque: number): Produto {
+    return new Produto(id, nome, preco, estoque);
+  }
+
+  reduzirEstoque(quantidade: number): Produto {
+    if (quantidade > this.estoque) {
+      throw new Error(`Estoque insuficiente para "${this.nome}". Disponível: ${this.estoque}`);
+    }
+    return new Produto(this.id, this.nome, this.preco, this.estoque - quantidade);
   }
 
   getId(): number {
@@ -29,5 +38,8 @@ export class Produto {
   }
   getPreco(): number {
     return this.preco;
+  }
+  getEstoque(): number {
+    return this.estoque;
   }
 }

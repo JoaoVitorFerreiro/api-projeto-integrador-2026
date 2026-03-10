@@ -1,45 +1,26 @@
+import { VendaItem } from "./VendaItem";
+
 export class Venda {
   private constructor(
     private readonly id: number,
     private readonly clienteId: number,
-    private readonly produtoId: number,
-    private readonly quantidade: number,
+    private readonly itens: VendaItem[],
     private readonly total: number
   ) {}
 
-  // Cria uma nova venda.
-  // O total é calculado automaticamente: quantidade * precoUnitario.
-  static create(
-    clienteId: number,
-    produtoId: number,
-    quantidade: number,
-    precoUnitario: number
-  ): Venda {
+  static create(clienteId: number, itens: VendaItem[]): Venda {
     if (clienteId <= 0) {
       throw new Error("Cliente inválido");
     }
-    if (produtoId <= 0) {
-      throw new Error("Produto inválido");
+    if (itens.length === 0) {
+      throw new Error("A venda deve ter ao menos um item");
     }
-    if (quantidade <= 0) {
-      throw new Error("Quantidade deve ser maior que zero");
-    }
-    if (precoUnitario <= 0) {
-      throw new Error("Preço unitário deve ser maior que zero");
-    }
-    const total = quantidade * precoUnitario;
-    return new Venda(0, clienteId, produtoId, quantidade, total);
+    const total = itens.reduce((acc, item) => acc + item.getSubtotal(), 0);
+    return new Venda(0, clienteId, itens, total);
   }
 
-  // Reconstitui uma venda vinda do banco de dados.
-  static reconstituir(
-    id: number,
-    clienteId: number,
-    produtoId: number,
-    quantidade: number,
-    total: number
-  ): Venda {
-    return new Venda(id, clienteId, produtoId, quantidade, total);
+  static reconstituir(id: number, clienteId: number, itens: VendaItem[], total: number): Venda {
+    return new Venda(id, clienteId, itens, total);
   }
 
   getId(): number {
@@ -48,11 +29,8 @@ export class Venda {
   getClienteId(): number {
     return this.clienteId;
   }
-  getProdutoId(): number {
-    return this.produtoId;
-  }
-  getQuantidade(): number {
-    return this.quantidade;
+  getItens(): VendaItem[] {
+    return this.itens;
   }
   getTotal(): number {
     return this.total;

@@ -15,24 +15,34 @@ export function VendaController() {
       vendas.map((v) => ({
         id: v.getId(),
         clienteId: v.getClienteId(),
-        produtoId: v.getProdutoId(),
-        quantidade: v.getQuantidade(),
         total: v.getTotal(),
+        itens: v.getItens().map((i) => ({
+          id: i.getId(),
+          produtoId: i.getProdutoId(),
+          quantidade: i.getQuantidade(),
+          precoUnitario: i.getPrecoUnitario(),
+          subtotal: i.getSubtotal(),
+        })),
       }))
     );
   });
 
   app.post("/vendas", (req, res) => {
     try {
-      const { clienteId, produtoId, quantidade } = req.body;
+      const { clienteId, itens } = req.body;
       const useCase = new CreateVendaUseCase(vendaRepository, produtoRepository);
-      const venda = useCase.execute({ clienteId, produtoId, quantidade });
+      const venda = useCase.execute({ clienteId, itens });
       res.status(201).json({
         id: venda.getId(),
         clienteId: venda.getClienteId(),
-        produtoId: venda.getProdutoId(),
-        quantidade: venda.getQuantidade(),
         total: venda.getTotal(),
+        itens: venda.getItens().map((i) => ({
+          id: i.getId(),
+          produtoId: i.getProdutoId(),
+          quantidade: i.getQuantidade(),
+          precoUnitario: i.getPrecoUnitario(),
+          subtotal: i.getSubtotal(),
+        })),
       });
     } catch (err) {
       const mensagem = err instanceof Error ? err.message : "Erro interno";

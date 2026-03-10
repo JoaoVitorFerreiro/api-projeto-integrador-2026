@@ -1,12 +1,15 @@
 import db from "../database/database";
 import { Venda } from "../models/Venda";
+import { VendaItem } from "../models/VendaItem";
 
-type VendaRow = {
+type VendaRow = { id: number; cliente_id: number; total: number };
+type VendaItemRow = {
   id: number;
-  cliente_id: number;
+  venda_id: number;
   produto_id: number;
   quantidade: number;
-  total: number;
+  preco_unitario: number;
+  subtotal: number;
 };
 
 export interface IVendaRepository {
@@ -14,38 +17,53 @@ export interface IVendaRepository {
   listar(): Venda[];
 }
 
-
 export class VendaRepository implements IVendaRepository {
   salvar(venda: Venda): Venda {
-    const query = db.prepare(
-      "INSERT INTO vendas (cliente_id, produto_id, quantidade, total) VALUES (?, ?, ?, ?)"
+    const insertVenda = db.prepare(
+      "INSERT INTO vendas (cliente_id, total) VALUES (?, ?)"
     );
-    const resultado = query.run(
-      venda.getClienteId(),
-      venda.getProdutoId(),
-      venda.getQuantidade(),
-      venda.getTotal()
+    const insertItem = db.prepare(
+      "INSERT INTO venda_itens (venda_id, produto_id, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?)"
     );
-    return Venda.reconstituir(
-      Number(resultado.lastInsertRowid),
-      venda.getClienteId(),
-      venda.getProdutoId(),
-      venda.getQuantidade(),
-      venda.getTotal()
-    );
+
+    const executar = db.transaction(() => {
+      const resultado = insertVenda.run(venda.getClienteId(), venda.getTotal());
+      const vendaId = Number(resultado.lastInsertRowid);
+
+      const itensSalvos: VendaItem[] = venda.getItens().map((item) => {
+        const res = insertItem.run(
+          vendaId,
+          item.getProdutoId(),
+          item.getQuantidade(),
+          item.getPrecoUnitario(),
+          item.getSubtotal()
+        );
+        return VendaItem.reconstituir(
+          Number(res.lastInsertRowid),
+          vendaId,
+          item.getProdutoId(),
+          item.getQuantidade(),
+          item.getPrecoUnitario(),
+          item.getSubtotal()
+        );
+      });
+
+      return Venda.reconstituir(vendaId, venda.getClienteId(), itensSalvos, venda.getTotal());
+    });
+
+    return executar();
   }
 
   listar(): Venda[] {
-    const stmt = db.prepare("SELECT * FROM vendas");
-    const linhas = stmt.all() as VendaRow[];
-    return linhas.map((linha) =>
-      Venda.reconstituir(
-        linha.id,
-        linha.cliente_id,
-        linha.produto_id,
-        linha.quantidade,
-        linha.total
-      )
-    );
+    const vendas = db.prepare("SELECT * FROM vendas").all() as VendaRow[];
+    const buscarItens = db.prepare("SELECT * FROM venda_itens WHERE venda_id = ?");
+
+    return vendas.map((v) => {
+      const itensRows = buscarItens.all(v.id) as VendaItemRow[];
+      const itens = itensRows.map((i) =>
+        VendaItem.reconstituir(i.id, i.venda_id, i.produto_id, i.quantidade, i.preco_unitario, i.subtotal)
+      );
+      return Venda.reconstituir(v.id, v.cliente_id, itens, v.total);
+    });
   }
 }

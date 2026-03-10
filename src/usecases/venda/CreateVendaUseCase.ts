@@ -1,11 +1,16 @@
 import { Venda } from "../../models/Venda";
+import { VendaItem } from "../../models/VendaItem";
 import { IProdutoRepository } from "../../repositories/ProdutoRepository";
 import { IVendaRepository } from "../../repositories/VendaRepository";
 
-interface Input {
-  clienteId: number;
+interface ItemInput {
   produtoId: number;
   quantidade: number;
+}
+
+interface Input {
+  clienteId: number;
+  itens: ItemInput[];
 }
 
 export class CreateVendaUseCase {
@@ -15,18 +20,32 @@ export class CreateVendaUseCase {
   ) {}
 
   execute(input: Input): Venda {
-    const produto = this.produtoRepository.buscarPorId(input.produtoId);
-    if (!produto) {
-      throw new Error("Produto não encontrado");
+    if (!input.itens || input.itens.length === 0) {
+      throw new Error("A venda deve ter ao menos um item");
     }
 
-    const venda = Venda.create(
-      input.clienteId,
-      input.produtoId,
-      input.quantidade,
-      produto.getPreco()
-    );
+    const itens: VendaItem[] = [];
+    const produtosAtualizados = [];
 
-    return this.vendaRepository.salvar(venda);
+    for (const itemInput of input.itens) {
+      const produto = this.produtoRepository.buscarPorId(itemInput.produtoId);
+      if (!produto) {
+        throw new Error(`Produto ${itemInput.produtoId} não encontrado`);
+      }
+
+      const produtoAtualizado = produto.reduzirEstoque(itemInput.quantidade);
+      produtosAtualizados.push(produtoAtualizado);
+
+      itens.push(VendaItem.create(0, produto.getId(), itemInput.quantidade, produto.getPreco()));
+    }
+
+    const venda = Venda.create(input.clienteId, itens);
+    const vendaSalva = this.vendaRepository.salvar(venda);
+
+    for (const produto of produtosAtualizados) {
+      this.produtoRepository.atualizarEstoque(produto);
+    }
+
+    return vendaSalva;
   }
 }
