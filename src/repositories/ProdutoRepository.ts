@@ -1,54 +1,28 @@
 import db from "../database/database";
 import { Produto } from "../models/Produto";
 
-type ProdutoRow = { id: number; nome: string; preco: number; estoque: number };
-
-export interface IProdutoRepository {
-  salvar(produto: Produto): Produto;
-  listar(): Produto[];
-  buscarPorId(id: number): Produto | null;
-  buscarPorNome(nome: string): Produto | null;
-  atualizarEstoque(produto: Produto): void;
-}
-
-export class ProdutoRepository implements IProdutoRepository {
+export class ProdutoRepository {
   salvar(produto: Produto): Produto {
-    const query = db.prepare(
-      "INSERT INTO produtos (nome, preco, estoque) VALUES (?, ?, ?)"
-    );
-    const resultado = query.run(produto.getNome(), produto.getPreco(), produto.getEstoque());
-    return Produto.reconstituir(
-      Number(resultado.lastInsertRowid),
-      produto.getNome(),
-      produto.getPreco(),
-      produto.getEstoque()
-    );
+    const resultado = db
+      .prepare("INSERT INTO produtos (nome, preco, estoque) VALUES (?, ?, ?)")
+      .run(produto.nome, produto.preco, produto.estoque);
+
+    return { id: Number(resultado.lastInsertRowid), nome: produto.nome, preco: produto.preco, estoque: produto.estoque };
   }
 
   listar(): Produto[] {
-    const query = db.prepare("SELECT * FROM produtos");
-    const linhas = query.all() as ProdutoRow[];
-    return linhas.map((linha) =>
-      Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque)
-    );
+    return db.prepare("SELECT * FROM produtos").all() as Produto[];
   }
 
   buscarPorId(id: number): Produto | null {
-    const query = db.prepare("SELECT * FROM produtos WHERE id = ?");
-    const linha = query.get(id) as ProdutoRow | undefined;
-    if (!linha) return null;
-    return Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque);
+    return (db.prepare("SELECT * FROM produtos WHERE id = ?").get(id) as Produto) ?? null;
   }
 
   buscarPorNome(nome: string): Produto | null {
-    const query = db.prepare("SELECT * FROM produtos WHERE nome LIKE ?");
-    const linha = query.get(`%${nome}%`) as ProdutoRow | undefined;
-    if (!linha) return null;
-    return Produto.reconstituir(linha.id, linha.nome, linha.preco, linha.estoque);
+    return (db.prepare("SELECT * FROM produtos WHERE nome LIKE ?").get(`%${nome}%`) as Produto) ?? null;
   }
 
-  atualizarEstoque(produto: Produto): void {
-    const query = db.prepare("UPDATE produtos SET estoque = ? WHERE id = ?");
-    query.run(produto.getEstoque(), produto.getId());
+  atualizarEstoque(id: number, estoque: number): void {
+    db.prepare("UPDATE produtos SET estoque = ? WHERE id = ?").run(estoque, id);
   }
 }

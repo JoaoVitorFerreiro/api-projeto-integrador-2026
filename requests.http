@@ -5,8 +5,8 @@ POST http://localhost:3000/clientes
 Content-Type: application/json
 
 {
-  "nome": "Joao",
-  "email": "joao@email.com"
+  "nome": "Maria",
+  "email": "Maria@email.com"
 }
 
 ###
@@ -17,12 +17,12 @@ GET http://localhost:3000/clientes
 ###
 
 ### Buscar cliente por id
-GET http://localhost:3000/clientes/1
+GET http://localhost:3000/clientes/2
 
 ###
 
 ### Buscar cliente por nome (busca parcial)
-GET http://localhost:3000/clientes?nome=cc
+GET http://localhost:3000/clientes?nome=M
 
 ###
 
@@ -33,7 +33,7 @@ POST http://localhost:3000/produtos
 Content-Type: application/json
 
 {
-  "nome": "Tenis",
+  "nome": "Tenis azul",
   "preco": 400,
   "estoque": 2
 }
@@ -51,7 +51,7 @@ GET http://localhost:3000/produtos/2
 ###
 
 ### Buscar produto por nome (busca parcial)
-GET http://localhost:3000/produtos?nome=note
+GET http://localhost:3000/produtos?nome=Tenis azul
 
 ###
 
@@ -64,7 +64,7 @@ Content-Type: application/json
 {
   "clienteId": 1,
   "itens": [
-    { "produtoId": 1, "quantidade": 2 }
+    { "produtoId": 2, "quantidade": 1 }
   ]
 }
 
@@ -78,7 +78,7 @@ Content-Type: application/json
   "clienteId": 1,
   "itens": [
     { "produtoId": 1, "quantidade": 2 },
-    { "produtoId": 2, "quantidade": 1 }
+    { "produtoId": 89, "quantidade": 1 }
   ]
 }
 

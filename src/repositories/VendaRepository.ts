@@ -12,43 +12,30 @@ type VendaItemRow = {
   subtotal: number;
 };
 
-export interface IVendaRepository {
-  salvar(venda: Venda): Venda;
-  listar(): Venda[];
-}
-
-export class VendaRepository implements IVendaRepository {
+export class VendaRepository {
   salvar(venda: Venda): Venda {
-    const insertVenda = db.prepare(
-      "INSERT INTO vendas (cliente_id, total) VALUES (?, ?)"
-    );
+    const insertVenda = db.prepare("INSERT INTO vendas (cliente_id, total) VALUES (?, ?)");
     const insertItem = db.prepare(
       "INSERT INTO venda_itens (venda_id, produto_id, quantidade, preco_unitario, subtotal) VALUES (?, ?, ?, ?, ?)"
     );
 
     const executar = db.transaction(() => {
-      const resultado = insertVenda.run(venda.getClienteId(), venda.getTotal());
+      const resultado = insertVenda.run(venda.clienteId, venda.total);
       const vendaId = Number(resultado.lastInsertRowid);
 
-      const itensSalvos: VendaItem[] = venda.getItens().map((item) => {
-        const res = insertItem.run(
+      const itensSalvos: VendaItem[] = venda.itens.map((item) => {
+        const res = insertItem.run(vendaId, item.produtoId, item.quantidade, item.precoUnitario, item.subtotal);
+        return {
+          id: Number(res.lastInsertRowid),
           vendaId,
-          item.getProdutoId(),
-          item.getQuantidade(),
-          item.getPrecoUnitario(),
-          item.getSubtotal()
-        );
-        return VendaItem.reconstituir(
-          Number(res.lastInsertRowid),
-          vendaId,
-          item.getProdutoId(),
-          item.getQuantidade(),
-          item.getPrecoUnitario(),
-          item.getSubtotal()
-        );
+          produtoId: item.produtoId,
+          quantidade: item.quantidade,
+          precoUnitario: item.precoUnitario,
+          subtotal: item.subtotal,
+        };
       });
 
-      return Venda.reconstituir(vendaId, venda.getClienteId(), itensSalvos, venda.getTotal());
+      return { id: vendaId, clienteId: venda.clienteId, total: venda.total, itens: itensSalvos };
     });
 
     return executar();
@@ -60,10 +47,15 @@ export class VendaRepository implements IVendaRepository {
 
     return vendas.map((v) => {
       const itensRows = buscarItens.all(v.id) as VendaItemRow[];
-      const itens = itensRows.map((i) =>
-        VendaItem.reconstituir(i.id, i.venda_id, i.produto_id, i.quantidade, i.preco_unitario, i.subtotal)
-      );
-      return Venda.reconstituir(v.id, v.cliente_id, itens, v.total);
+      const itens: VendaItem[] = itensRows.map((i) => ({
+        id: i.id,
+        vendaId: i.venda_id,
+        produtoId: i.produto_id,
+        quantidade: i.quantidade,
+        precoUnitario: i.preco_unitario,
+        subtotal: i.subtotal,
+      }));
+      return { id: v.id, clienteId: v.cliente_id, total: v.total, itens };
     });
   }
 }

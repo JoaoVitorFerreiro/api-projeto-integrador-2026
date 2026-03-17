@@ -1,49 +1,53 @@
 import { app } from "../server";
 import { ProdutoRepository } from "../repositories/ProdutoRepository";
 import { VendaRepository } from "../repositories/VendaRepository";
-import { CreateVendaUseCase } from "../usecases/venda/CreateVendaUseCase";
-import { ListVendasUseCase } from "../usecases/venda/ListVendasUseCase";
+import { VendaItem } from "../models/VendaItem";
 
 export function VendaController() {
   const vendaRepository = new VendaRepository();
   const produtoRepository = new ProdutoRepository();
 
   app.get("/vendas", (req, res) => {
-    const useCase = new ListVendasUseCase(vendaRepository);
-    const vendas = useCase.execute();
-    res.json(
-      vendas.map((v) => ({
-        id: v.getId(),
-        clienteId: v.getClienteId(),
-        total: v.getTotal(),
-        itens: v.getItens().map((i) => ({
-          id: i.getId(),
-          produtoId: i.getProdutoId(),
-          quantidade: i.getQuantidade(),
-          precoUnitario: i.getPrecoUnitario(),
-          subtotal: i.getSubtotal(),
-        })),
-      }))
-    );
+    res.json(vendaRepository.listar());
   });
 
   app.post("/vendas", (req, res) => {
     try {
       const { clienteId, itens } = req.body;
-      const useCase = new CreateVendaUseCase(vendaRepository, produtoRepository);
-      const venda = useCase.execute({ clienteId, itens });
-      res.status(201).json({
-        id: venda.getId(),
-        clienteId: venda.getClienteId(),
-        total: venda.getTotal(),
-        itens: venda.getItens().map((i) => ({
-          id: i.getId(),
-          produtoId: i.getProdutoId(),
-          quantidade: i.getQuantidade(),
-          precoUnitario: i.getPrecoUnitario(),
-          subtotal: i.getSubtotal(),
-        })),
-      });
+
+      if (!itens || itens.length === 0) throw new Error("A venda deve ter ao menos um item");
+
+      let total = 0;
+      const itensDaVenda: VendaItem[] = [];
+      const estoqueParaAtualizar: { id: number; novoEstoque: number }[] = [];
+
+      for (const item of itens) {
+        const produto = produtoRepository.buscarPorId(item.produtoId);
+        if (!produto) throw new Error(`Produto ${item.produtoId} não encontrado`);
+        if (item.quantidade > produto.estoque) {
+          throw new Error(`Estoque insuficiente para "${produto.nome}". Disponível: ${produto.estoque}`);
+        }
+
+        const subtotal = item.quantidade * produto.preco;
+        total += subtotal;
+
+        itensDaVenda.push({
+          produtoId: produto.id!,
+          quantidade: item.quantidade,
+          precoUnitario: produto.preco,
+          subtotal,
+        });
+
+        estoqueParaAtualizar.push({ id: produto.id!, novoEstoque: produto.estoque - item.quantidade });
+      }
+
+      const venda = vendaRepository.salvar({ clienteId, total, itens: itensDaVenda });
+
+      for (const p of estoqueParaAtualizar) {
+        produtoRepository.atualizarEstoque(p.id, p.novoEstoque);
+      }
+
+      res.status(201).json(venda);
     } catch (err) {
       const mensagem = err instanceof Error ? err.message : "Erro interno";
       res.status(400).json({ erro: mensagem });

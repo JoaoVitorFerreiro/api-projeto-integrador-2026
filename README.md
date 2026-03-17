@@ -1,6 +1,6 @@
 # Projeto Integrador — API REST com Node.js + TypeScript
 
-Este projeto é uma base para o desenvolvimento do Projeto Integrador. Ele implementa uma API REST utilizando **Node.js**, **TypeScript**, **Express** e **SQLite**, seguindo uma arquitetura em camadas.
+Este projeto é uma base para o desenvolvimento do Projeto Integrador. Ele implementa uma API REST utilizando **Node.js**, **TypeScript**, **Express** e **SQLite**, seguindo uma arquitetura em três camadas.
 
 ---
 
@@ -107,8 +107,7 @@ Crie os diretórios dentro de `src/`:
 
 ```
 src/
-├── controllers/      → Recebe as requisições HTTP e devolve as respostas
-├── usecases/         → Contém as regras de negócio de cada operação
+├── controllers/      → Recebe as requisições HTTP, aplica as regras de negócio e devolve as respostas
 ├── models/           → Define as entidades do domínio (ex: Cliente, Produto)
 ├── repositories/     → Faz a comunicação com o banco de dados
 └── database/         → Configuração e inicialização do banco SQLite
@@ -117,7 +116,7 @@ src/
 No terminal:
 
 ```bash
-mkdir -p src/controllers src/usecases src/models src/repositories src/database
+mkdir -p src/controllers src/models src/repositories src/database
 ```
 
 ---
@@ -134,14 +133,12 @@ O servidor iniciará em `http://localhost:3000`.
 
 ## Arquitetura do projeto
 
-Este projeto segue uma **arquitetura em camadas**. Cada camada tem uma responsabilidade clara e não deve misturar responsabilidades com outra.
+Este projeto segue uma **arquitetura em três camadas**. Cada camada tem uma responsabilidade clara e não deve misturar responsabilidades com outra.
 
 ```
 Requisição HTTP
       ↓
-  Controller       → Recebe req, chama o UseCase, devolve res
-      ↓
-   UseCase         → Contém a regra de negócio (o "o que fazer")
+  Controller       → Recebe req, aplica as regras de negócio, devolve res
       ↓
   Repository       → Acessa o banco de dados (o "como persistir")
       ↓
@@ -150,9 +147,8 @@ Requisição HTTP
 
 ### Por que separar em camadas?
 
-- **Controller** não sabe nada de banco de dados
-- **UseCase** não sabe nada de HTTP (sem `req`/`res`)
-- **Repository** não sabe nada de regra de negócio
+- **Controller** conhece HTTP (`req`/`res`), mas não escreve SQL diretamente
+- **Repository** não sabe nada de HTTP nem de regras de negócio — só persiste dados
 - Cada parte pode ser alterada ou testada de forma independente
 
 ---
@@ -257,26 +253,15 @@ Requisição HTTP
 
 ## Conceitos importantes
 
-### Construtor privado + métodos estáticos
+### Models como interfaces
 
-Os modelos usam construtor `private` para que ninguém crie objetos diretamente com `new`. Em vez disso, existem dois métodos estáticos:
-
-```typescript
-// Cria um objeto novo — executa validações
-Cliente.create(nome, email)
-
-// Reconstitui do banco — sem validações (dados já foram validados antes)
-Cliente.reconstituir(id, nome, email)
-```
-
-### `readonly`
-
-As propriedades dos modelos são `readonly`, o que significa que não podem ser alteradas após a criação. Para "alterar" um valor, o modelo retorna uma **nova instância** com o valor atualizado:
+Os modelos são definidos como `interface` TypeScript — estruturas simples que descrevem o formato dos dados sem comportamento próprio. As validações e regras de negócio ficam no Controller.
 
 ```typescript
-// Em vez de this.estoque -= quantidade
-reduzirEstoque(quantidade: number): Produto {
-  return new Produto(this.id, this.nome, this.preco, this.estoque - quantidade);
+export interface Cliente {
+  id?: number;
+  nome: string;
+  email: string;
 }
 ```
 
